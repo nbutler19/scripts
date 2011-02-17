@@ -1,0 +1,13 @@
+Overview
+========
+
+This is a collection of rightscripts.
+
+Directories
+===========
+
+* `sys/` - Package Installation scripts 
+* `python/` - Python egg Installation scripts
+* `ruby/` - Ruby gem Installation scripts
+* `conf/` - Configuration file Installation scripts
+* `script/` - Custom scripts to run on the system either boot, operational, or decommission scripts

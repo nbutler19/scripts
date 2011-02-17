@@ -1,0 +1,41 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+apt_conf_file=/etc/apt/apt.conf.d/01ubuntu
+INSTALL_RECOMMENDS=$INSTALL_RECOMMENDS
+INSTALL_SUGGESTS=$INSTALL_SUGGESTS
+
+if_exists() {
+    t_string="$*"
+    if grep -q "$t_string" $apt_conf_file ;
+        then
+        echo 1
+        else
+        echo 0
+    fi
+}
+
+if ! test -f $apt_conf_file ; then
+    logger -t $0: "Apt file $apt_conf_file doesn't exist" && exit 1
+fi
+
+result=$(if_exists Install-Recommends \"$INSTALL_RECOMMENDS\"\;)
+if [ $result -eq 0 ] ; then
+    sed -i "s/};/Install-Recommends \"$INSTALL_RECOMMENDS\";/" $apt_conf_file
+    echo '};' >> $apt_conf_file
+fi
+
+result=$(if_exists Install-Suggests \"$INSTALL_SUGGESTS\"\;)
+if [ $result -eq 0 ] ; then
+    sed -i "s/};/Install-Suggests \"$INSTALL_SUGGESTS\";/" $apt_conf_file
+    echo '};' >> $apt_conf_file
+fi
+
+apt-get update
