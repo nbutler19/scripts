@@ -6,8 +6,8 @@ use Date::Calc qw(Delta_DHMS Day_of_Week Today_and_Now);
 use Net::Amazon::EC2;
 use Getopt::Long;
 
-my $aws_access_key_id = ENV{'AWS_ACCESS_KEY_ID'}; 
-my $aws_secret_key_id = ENV{'AWS_SECRET_KEY_ID'};
+my $aws_access_key_id = $ENV{'AWS_ACCESS_KEY_ID'}; 
+my $aws_secret_key_id = $ENV{'AWS_SECRET_KEY_ID'};
 
 
 my $debug = 0;

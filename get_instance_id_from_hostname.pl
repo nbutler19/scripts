@@ -10,8 +10,8 @@ use Net::Amazon::EC2;
 use Net::DNS;
 use Getopt::Long;
 
-my $aws_access_key_id = ENV{'AWS_ACCESS_KEY_ID'};
-my $aws_secret_key_id = ENV{'AWS_SECRET_KEY_ID'};
+my $aws_access_key_id = $ENV{'AWS_ACCESS_KEY_ID'};
+my $aws_secret_key_id = $ENV{'AWS_SECRET_KEY_ID'};
 
 # Debug flags. $debug is useful for seeing the entire api response. $verbose is just internal script print statements.
 my $debug = 0;

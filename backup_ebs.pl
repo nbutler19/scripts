@@ -12,8 +12,8 @@ use Net::DNS;
 use POSIX qw(strftime);
 use Getopt::Long;
 
-my $aws_access_key_id = ENV{'AWS_ACCESS_KEY_ID'};
-my $aws_secret_key_id = ENV{'AWS_SECRET_KEY_ID'};
+my $aws_access_key_id = $ENV{'AWS_ACCESS_KEY_ID'};
+my $aws_secret_key_id = $ENV{'AWS_SECRET_KEY_ID'};
 
 # Debug flags. $debug is useful for seeing the entire api response. $verbose is just internal script print statements.
 my $debug = 0;
@@ -253,7 +253,7 @@ sub do_snapshot {
     my $desc = get_description($hostname,$instance_id,$volume_id,$device,$description);
 
     if (defined($dryrun)) {
-        print "info: created snapshot with description => $desc\n" if $info;
+        print "info: would create snapshot with description => $desc\n" if $info;
         return;
     }
 

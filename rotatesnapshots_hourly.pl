@@ -12,8 +12,8 @@ use warnings;
 use Date::Manip;
 use Net::Amazon::EC2;
 
-my $aws_access_key_id = ENV{'AWS_ACCESS_KEY_ID'};
-my $aws_secret_key_id = ENV{'AWS_SECRET_KEY_ID'};
+my $aws_access_key_id = $ENV{'AWS_ACCESS_KEY_ID'};
+my $aws_secret_key_id = $ENV{'AWS_SECRET_KEY_ID'};
 
 my $server = ();
 my $debug = 0;
