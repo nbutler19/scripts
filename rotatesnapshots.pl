@@ -8,6 +8,7 @@ use Getopt::Long;
 
 my $aws_access_key_id = $ENV{'AWS_ACCESS_KEY_ID'}; 
 my $aws_secret_key_id = $ENV{'AWS_SECRET_KEY_ID'};
+my $aws_owner_id = $ENV{'AWS_OWNER_ID'};
 
 
 my $debug = 0;
@@ -32,7 +33,7 @@ GetOptions ("debug!" => \$debug,
 
 sub get_snapshots {
     my $method_call = "describe_snapshots";
-    my %method_args = (Owner => '742987638236');
+    my %method_args = (Owner => $aws_owner_id);
     my $snapshots = error_check($method_call,%method_args);
     return @$snapshots;
 }
