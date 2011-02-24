@@ -10,8 +10,9 @@ fi
 
 crontab=/etc/cron.d/backups
 
-echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $crontab
+echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" > $crontab
 echo "AWS_SECRET_KEY_ID=$AWS_SECRET_KEY_ID" >> $crontab
+echo "AWS_OWNER_ID=$AWS_OWNER_ID" >> $crontab
 echo "#Snapshot EBS Volumes" >> $crontab
 
 for host in $HOSTS_TO_BACKUP ; do
