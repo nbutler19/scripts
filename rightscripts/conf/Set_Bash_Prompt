@@ -1,0 +1,10 @@
+#!/bin/bash -ex
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-config on reboot."
+  exit 0
+fi
+
+sed -i.old "s/\(PS1=.*\)h\(.*\)/\1H\2/" /etc/bash.bashrc

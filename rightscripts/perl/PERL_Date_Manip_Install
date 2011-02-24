@@ -1,0 +1,11 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+apt-get -y install libdate-manip-perl

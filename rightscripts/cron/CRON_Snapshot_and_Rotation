@@ -1,0 +1,25 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+crontab=/etc/cron.d/backups
+
+echo "AWS_ACCESS_KEY_ID=$AWS_ACCESS_KEY_ID" >> $crontab
+echo "AWS_SECRET_KEY_ID=$AWS_SECRET_KEY_ID" >> $crontab
+echo "#Snapshot EBS Volumes" >> $crontab
+
+for host in $HOSTS_TO_BACKUP ; do
+    echo "0 9 * * * root /usr/local/bin/backup_ebs.pl -h $host.$DOMAIN --all" >> $crontab
+done
+
+echo "#Rotate Snapshots, keep 4 weeklies and 7 dailies" >> $crontab
+
+for host in $HOSTS_TO_BACKUP ; do
+    echo "0 10 * * * root /usr/local/bin/rotatesnapshots.pl -h $host.$DOMAIN --weeks 4 --days 7" >> $crontab
+done

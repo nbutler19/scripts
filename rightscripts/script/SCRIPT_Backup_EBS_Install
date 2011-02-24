@@ -1,0 +1,13 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+wget --no-check-certificate -O/usr/local/bin/backup_ebs.pl https://github.com/nbutler19/scripts/raw/master/backup_ebs.pl
+
+chmod +x /usr/local/bin/backup_ebs.pl

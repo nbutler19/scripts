@@ -1,0 +1,53 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+echo $HOME
+
+if [ -f /srv/gitosis/repositories/gitosis-admin.git/gitosis.conf ]; then
+    logger -t $0 "Gitosis is already configured"
+    exit
+fi
+
+# grab the keys
+cp $ATTACH_DIR/id_dsa.pub /root/.ssh/id_dsa.pub
+cp $ATTACH_DIR/id_dsa /root/.ssh/id_dsa && chmod 0600 /root/.ssh/id_dsa
+
+# init the repo with the pub key
+sudo -H -u gitosis gitosis-init < $HOME/.ssh/id_dsa.pub
+
+# add ssh host keys to know_hosts otherwise script fails
+ssh-keyscan -t rsa,dsa build01 >> $HOME/.ssh/known_hosts
+
+# checkout the repo
+echo $SSHKEYPASS | /usr/local/bin/sshaskpass.sh git clone gitosis@${HOSTNAME}:gitosis-admin.git $HOME/gitosis-admin.git
+
+for project in $PROJECTS ; do
+    cd $HOME/gitosis-admin.git &&\
+cat >>gitosis.conf <<EOF
+[group $project]
+writable = $project
+members = root@build01
+daemon = yes
+    
+EOF
+
+    git commit -am "Adding projects to gitosis.conf"
+    echo $SSHKEYPASS | /usr/local/bin/sshaskpass.sh git push origin
+
+    # Create new project
+
+    cd $HOME && mkdir $project.git && cd $project.git && git init
+
+    touch git-daemon-export-ok
+    git add git-daemon-export-ok
+    git commit -am "Adding git-daemon-export-ok to repo"
+    git remote add origin gitosis@${HOSTNAME}:${project}.git
+    echo $SSHKEYPASS | /usr/local/bin/sshaskpass.sh git push origin master:refs/heads/master
+done

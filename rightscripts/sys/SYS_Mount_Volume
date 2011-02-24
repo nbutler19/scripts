@@ -1,0 +1,5 @@
+#!/bin/bash -ex
+
+mkdir -p $MOUNTPOINT
+
+mount $EBS_DEVICE $MOUNTPOINT

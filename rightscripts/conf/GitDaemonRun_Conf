@@ -1,0 +1,19 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+cat >/etc/sv/git-daemon/run <<- "EOF"
+#!/bin/sh
+exec 2>&1
+echo 'git-daemon starting.'
+exec chpst -ugitosis \
+  /usr/lib/git-core/git-daemon --verbose --base-path=/srv/gitosis/repositories --export-all
+EOF
+
+killall git-daemon

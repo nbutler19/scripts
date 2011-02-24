@@ -1,0 +1,20 @@
+#!/bin/bash -ex
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip Hostname setup on reboot."
+  exit 0
+fi
+
+. /var/spool/ec2/meta-data-cache.sh
+
+logger -t RightScale "Setting hostname to $HOSTNAME"
+
+hostname $HOSTNAME
+
+logger -t RightScale "Adding entry to /etc/hosts"
+
+echo "$EC2_LOCAL_IPV4  $HOSTNAME.$DOMAIN $HOSTNAME" >> /etc/hosts
+
+echo $HOSTNAME > /etc/hostname
