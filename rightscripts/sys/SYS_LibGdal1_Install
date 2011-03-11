@@ -1,0 +1,26 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip install on reboot."
+  exit 0 
+fi
+
+APTPATH="debian/pool/main/l/gdal"
+
+libgdal1_64bit="libgdal1-1.6.0_1.6.3-4+b1_amd64.deb"
+libgdal1_32bit="libgdal1-1.6.0_1.6.3-4+b1_i386.deb"
+
+logger -t RightScale "Installing GDAL..."
+
+arch=$(uname -m)
+
+if [ "$arch" == x86_64 ] ; then
+    wget $APTSERVER/$APTPATH/$libgdal1_64bit -O/tmp/$libgdal1_64bit && \
+   dpkg -i /tmp/$libgdal1_64bit
+else
+    wget $APTSERVER/$APTPATH/$libgdal1_32bit -O/tmp/$libgdal1_32bit && \
+    dpkg -i /tmp/$libgdal1_32bit
+fi

@@ -1,0 +1,26 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip install on reboot."
+  exit 0 
+fi
+
+APTPATH="debian/pool/main/p/postgis"
+
+postgis_64bit="postgis_1.5.1-5_amd64.deb"
+postgis_32bit="postgis_1.5.1-5_i386.deb"
+
+logger -t RightScale "Installing Postgis..."
+
+arch=$(uname -m)
+
+if [ "$arch" == x86_64 ] ; then
+    wget $APTSERVER/$APTPATH/$postgis_64bit -O/tmp/$postgis_64bit && \
+   dpkg -i /tmp/$postgis_64bit
+else
+    wget $APTSERVER/$APTPATH/$postgis_32bit -O/tmp/$postgis_32bit && \
+    dpkg -i /tmp/$postgis_32bit
+fi

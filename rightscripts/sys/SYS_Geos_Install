@@ -1,0 +1,32 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip install on reboot."
+  exit 0 
+fi
+
+APTPATH="debian/pool/main/g/geos"
+
+libgeos_32bit="libgeos-3.2.0_3.2.0-1_i386.deb"
+libgeos_64bit="libgeos-3.2.0_3.2.0-1_amd64.deb"
+libgeos_c1_64bit="libgeos-c1_3.2.0-1_amd64.deb"
+libgeos_c1_32bit="libgeos-c1_3.2.0-1_i386.deb"
+
+logger -t RightScale "Installing libgeos libraries..."
+
+arch=$(uname -m)
+
+if [ "$arch" == x86_64 ] ; then
+    wget $APTSERVER/$APTPATH/$libgeos_64bit -O/tmp/$libgeos_64bit && \
+    wget $APTSERVER/$APTPATH/$libgeos_c1_64bit -O/tmp/$libgeos_c1_64bit && \
+    dpkg -i /tmp/$libgeos_64bit && \
+    dpkg -i /tmp/$libgeos_c1_64bit
+else
+    wget $APTSERVER/$APTPATH/$libgeos_32bit -O/tmp/$libgeos_32bit && \
+    wget $APTSERVER/$APTPATH/$libgeos_c1_32bit -O/tmp/$libgeos_c1_32bit && \
+    dpkg -i /tmp/$libgeos_32bit && \
+    dpkg -i /tmp/$libgeos_c1_32bit
+fi

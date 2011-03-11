@@ -1,0 +1,32 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip install on reboot."
+  exit 0 
+fi
+
+APTPATH="debian/pool/main/p/proj"
+
+libproj0_64bit="libproj0_4.7.0-1_amd64.deb"
+libproj0_32bit="libproj0_4.7.0-1_i386.deb"
+proj_data_64bit="proj-data_4.7.0-1_amd64.deb"
+proj_data_32bit="proj-data_4.7.0-1_i386.deb"
+
+logger -t RightScale "Installing proj4 libraries..."
+
+arch=$(uname -m)
+
+if [ "$arch" == x86_64 ] ; then
+    wget $APTSERVER/$APTPATH/$proj_data_64bit -O/tmp/$proj_data_64bit && \
+    wget $APTSERVER/$APTPATH/$libproj0_64bit -O/tmp/$libproj0_64bit && \
+    dpkg -i /tmp/$proj_data_64bit && \
+    dpkg -i /tmp/$libproj0_64bit
+else
+    wget $APTSERVER/$APTPATH/$proj_data_32bit -O/tmp/$proj_data_32bit && \
+    wget $APTSERVER/$APTPATH/$libproj0_32bit -O/tmp/$libproj0_32bit && \
+    dpkg -i /tmp/$proj_data_32bit && \
+    dpkg -i /tmp/$libproj0_32bit
+fi
