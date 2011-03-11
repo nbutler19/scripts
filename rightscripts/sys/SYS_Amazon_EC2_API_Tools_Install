@@ -1,0 +1,44 @@
+#!/bin/bash -ex
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+mkdir -p /root/.ec2
+chmod 600 /root/.ec2
+
+ec2_x509_key_file=
+ec2_x509_cert_file=
+
+if test ! -f /root/.ec2/$ec2_x509_key_file ; then
+   cp $ATTACH_DIR/$ec2_x509_key_file /root/.ec2/$ec2_x509_key_file && \
+   chmod 600 /root/.ec2/$ec2_x509_key_file
+fi
+
+if test ! -f /root/.ec2/$ec2_x509_cert_file ; then
+   cp $ATTACH_DIR/$ec2_x509_cert_file /root/.ec2/$ec2_x509_cert_file && \
+   chmod 600 /root/.ec2/$ec2_x509_cert_file
+fi
+
+mkdir -p /usr/local/ec2
+
+if test ! -d /usr/local/ec2/ec2api ; then
+   cp $ATTACH_DIR/ec2-api-tools.zip /usr/local/ec2/ && \
+   cd /usr/local/ec2 && unzip /tmp/ec2-api-tools.zip && \
+   ln -s ec2-api-tools-1.4.0.2 ec2api
+fi
+
+if ! grep -q 'PATH' /root/.profile ; then
+   echo 'export PATH=$PATH:/usr/local/ec2/ec2api/bin' >> /root/.profile
+fi
+
+if ! grep -q 'EC2_CERT' /root/.profile ; then
+   echo "export EC2_CERT=/root/.ec2/$ec2_x509_cert_file" >> /root/.profile
+fi
+
+if ! grep -q 'EC2_PRIVATE_KEY' /root/.profile ; then
+   echo "export EC2_PRIVATE_KEY=/root/.ec2/$ec2_x509_key_file" >> /root/.profile
+fi 
