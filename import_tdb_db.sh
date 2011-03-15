@@ -9,6 +9,7 @@ mysqldb=
 mysqluser=
 mysqlpass=
 s3path=
+s3pickup=
 
 s3cmd get --force s3:///${s3_path}/${backup_file}.bz2 /tmp/${backup_file}.bz2
 
@@ -311,6 +312,6 @@ rm -f /tmp/${backup_file}
 rm -f ${fix_sql_file}
 
 mysqldump --default-character-set=utf8 -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldb | bzip2 > /tmp/tdb_weekly_import.sql.bz2
-s3cmd put /tmp/tdb_weekly_import.sql.bz2 s3://nw-dropbox/
+s3cmd put /tmp/tdb_weekly_import.sql.bz2 s3://${sw_pickup}/
 
 rm -f /tmp/tdb_weekly_import.sql.bz2
