@@ -1,0 +1,28 @@
+#!/bin/bash
+
+if test -z $1; then
+    echo "Usage: $0 <env>"
+    exit 1
+fi
+
+if [ "$1" == "main" ]; then
+    echo 'export AWS_ENVIRONMENT=main'
+    echo 'export AWS_ACCESS_KEY_ID=<ACCESS_KEY_ID>'
+    echo 'export AWS_SECRET_ACCESS_KEY=<SECRET_ACCESS_KEY>'
+    echo 'export AWS_CREDENTIALS=${HOME}/.ec2/main-credentials.txt'
+    echo 'export EC2_CERT=${HOME}/.ec2/<CERT_PEM_FILE>'
+    echo 'export EC2_PRIVATE_KEY=${HOME}/.ec2/<PK_PEM_FILE>'
+elif [ "$1" == "digital" ]; then
+    echo 'export AWS_ENVIRONMENT=digital'
+    echo 'export AWS_ACCESS_KEY_ID=<ACCESS_KEY_ID>'
+    echo 'export AWS_SECRET_ACCESS_KEY=<SECRET_ACCESS_KEY>'
+    echo 'export AWS_CREDENTIALS=${HOME}/.ec2/digital-credentials.txt'
+    echo 'export EC2_CERT=${HOME}/.ec2/<CERT_PEM_FILE>'
+    echo 'export EC2_PRIVATE_KEY=${HOME}/.ec2/<PK_PEM_FILE>'
+# And so on...
+# Alias this in your .bashrc like the following:
+#
+# Set AWS Env
+# alias awsmain='eval `"${HOME}/.set-aws-env-sh" main`'
+# alias awsdigital='eval `"${HOME}/.set-aws-env-sh" digital`'
+fi
