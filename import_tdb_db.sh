@@ -65,6 +65,8 @@ update tbl_name set col_name = replace(col_name, 'â€','-');
 update tbl_name set col_name = replace(col_name, 'Ã©','é');
 update tbl_name set col_name = replace(col_name, 'Ã€','À');
 update tbl_name set col_name = replace(col_name, 'Ã¤','ä');
+update tbl_name set col_name = replace(col_name, 'â˜†','☆'); 
+update tbl_name set col_name = replace(col_name, 'Ã ','à'); 
 EOF
 
 mysql --default-character-set=utf8 -h $mysqlhost -u $mysqluser -p$mysqlpass $mysqldb < /tmp/${backup_file}
