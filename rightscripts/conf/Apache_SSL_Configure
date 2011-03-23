@@ -1,0 +1,55 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip install on reboot."
+  exit 0 
+fi
+
+ssl_conf_file=/path/to/ssl/conf
+ssl_cert_file=/path/to/cert/file
+ssl_key_file=/path/to/key/file
+ssl_chain_file=/path/to/chain/file
+
+re_ssl_cert_file=$(echo $ssl_cert_file | sed -e 's/\//\\\//g')
+re_ssl_key_file=$(echo $ssl_key_file | sed -e 's/\//\\\//g')
+re_ssl_chain_file=$(echo $ssl_chain_file | sed -e 's/\//\\\//g')
+
+if ! test -f $ssl_cert_file; then
+    cp $ATTACH_DIR/<CERTFILE> $ssl_cert_file
+    chmod 600 $ssl_cert_file
+fi
+
+if ! test -f $ssl_key_file; then
+    cp $ATTACH_DIR/<KEYFILE> $ssl_key_file
+    chmod 600 $ssl_key_file
+fi
+
+if ! test -f $ssl_chain_file; then
+    cp $ATTACH_DIR/<CHAINFILE> $ssl_chain_file
+    chmod 644 $ssl_chain_file
+fi
+
+if ! grep -Pq "\tSSLCertificateFile $ssl_cert_file" $ssl_conf_file; then
+    sed -i "s/\tSSLCertificateFile.*/\tSSLCertificateFile $re_ssl_cert_file/"  $ssl_conf_file
+fi
+
+if ! grep -Pq "\tSSLCertificateKeyFile $ssl_key_file" $ssl_conf_file; then
+    sed -i "s/\tSSLCertificateKeyFile.*/\tSSLCertificateKeyFile $re_ssl_key_file/"  $ssl_conf_file
+fi
+
+if ! grep -Pq "\t#SSLCertificateChainFile $ssl_chain_file" $ssl_conf_file; then
+    sed -i "s/\t#SSLCertificateChainFile.*/\tSSLCertificateChainFile $re_ssl_chain_file/"  $ssl_conf_file
+fi
+
+apache2ctl configtest
+result=$?
+
+if test $result == 0; then
+    /etc/init.d/apache2 restart
+else
+    logger -t $0 "Apache Failed Configtest"
+    exit 1
+fi

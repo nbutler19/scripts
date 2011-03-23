@@ -1,0 +1,19 @@
+#!/bin/bash -ex
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+chroot_list_file=/etc/vsftpd.chroot_list
+
+#Zero out chroot list
+>$chroot_list_file
+
+for user in $CHROOT_USERS ; do
+    echo $user >> $chroot_list_file
+done
+
+service vsftpd restart

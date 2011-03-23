@@ -1,0 +1,39 @@
+#!/bin/bash -x
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip re-install on reboot."
+  exit 0
+fi
+
+grep -q /bin/false /etc/shells
+result=$?
+
+if [ $result == 1 ] ;then
+    echo "/bin/false" >> /etc/shells
+fi
+
+grep -q ftp-users /etc/group
+result=$?
+
+if [ $result == 1 ] ;then
+    groupadd -g 1001 ftp-users
+fi
+
+for user in $FTP_USERS ; do
+
+    grep -q $FTP_USER /etc/passwd
+    result=$?
+
+    if [ $result == 0 ] ;then
+        logger -t $0 "User $FTP_USER already exists"
+        continue
+    fi
+
+    useradd -g 1001 -u 1001 -m -s /bin/false $FTP_USER
+done
+
+for password in $FTP_USER_PASS ; do
+    echo $FTP_USER:$FTP_USER_PASS | chpasswd
+done

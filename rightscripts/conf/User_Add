@@ -1,0 +1,34 @@
+#!/bin/bash -ex
+
+#
+# Test for a reboot,  if this is a reboot just skip this script.
+#
+if test "$RS_REBOOT" = "true" ; then
+  echo "Skip install on reboot."
+  exit 0 
+fi
+
+for user in $SSH_USERS ; do
+    if ! test -f $ATTACH_DIR/$user.pub; then
+        logger -t $0 "User $user's public key not attached"
+        continue
+    fi
+
+    if grep -q "$user" /etc/passwd; then
+        continue
+    fi
+
+    useradd -m -g users -d /home/$user -s /bin/bash $user
+    mkdir -p /home/$user/.ssh && chmod 700 /home/$user/.ssh && chown $user:users /home/$user/.ssh
+
+    pubkey=$(cat $ATTACH_DIR/$user.pub)
+
+    if ! test -f /home/$user/.ssh/authorized_keys; then
+        touch /home/$user/.ssh/authorized_keys && chmod 600 /home/$user/.ssh/authorized_keys && chown $user:users /home/$user/.ssh/authorized_keys
+    fi
+    
+    if ! grep -q "$pubkey" /home/$user/.ssh/authorized_keys; then
+        echo "$pubkey" >> /home/$user/.ssh/authorized_keys
+    fi
+
+done
