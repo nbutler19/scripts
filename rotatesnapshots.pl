@@ -15,6 +15,7 @@ my $debug = 0;
 my $verbose = 0;
 my $all = undef;
 my $hostname = undef;
+my $instanceid = undef;
 my $hours = undef;
 my $dryrun = undef;
 my $info = undef;
@@ -26,6 +27,7 @@ GetOptions ("debug!" => \$debug,
             "dryrun!" => \$dryrun,
             "all" => \$all,
             "hostname=s" => \$hostname,
+            "instanceid=s" => \$instanceid,
             "weeks=i" => \$weeks,
             "days=i" => \$days,
             "hours=i" => \$hours,
@@ -56,7 +58,7 @@ sub delete_snapshot {
 
 
 sub rotate_hourly_snapshots {
-    my $hostname = shift;
+    my $identifier = shift;
     my $hours = shift;
     my $dryrun = shift;
     my $days;
@@ -71,19 +73,9 @@ sub rotate_hourly_snapshots {
 
         next if (!defined($snapshot->description));
         next if ($snapshot->description !~ m/-hourly-/);
-        next if ($snapshot->description !~ m/$hostname-hourly/);
+        next if ($snapshot->description !~ m/$identifier-hourly/);
         next if ($delta_days <= $days);
         next if (($delta_days == $next_day) && ($delta_hours <= $hours));
-
-        #if ($delta_days <= $days) {
-        #    print "SnapshotID: " . $snapshot->snapshot_id . " Start Time: " . $snapshot->start_time . " Day Delta: $delta_days Hour Delta: $delta_hours\n";
-        #    next;
-        #}
-
-        #if (($delta_days == $next_day) && ($delta_hours <= $hours)) {
-        #    print "SnapshotID: " . $snapshot->snapshot_id . " Start Time: " . $snapshot->start_time . " Day Delta: $delta_days Hour Delta: $delta_hours\n";
-        #    next;
-        #}
 
         delete_snapshot($snapshot,$dryrun);
         debug_rotate_hourly_snapshot($snapshot,$delta_days,$delta_hours,@snapshot_time) if $verbose;
@@ -114,7 +106,7 @@ sub rotate_daily_snapshots {
 }
 
 sub rotate_snapshots {
-    my $hostname = shift;
+    my $identifier = shift;
     my $weeks = shift;
     my $days = shift;
     my $dryrun = shift;
@@ -126,7 +118,7 @@ sub rotate_snapshots {
 
         next if (!defined($snapshot->description));
         next if ($snapshot->description =~ m/-hourly-/);
-        next if ($snapshot->description !~ m/$hostname-(snap|vol)/);
+        next if ($snapshot->description !~ m/$identifier-/);
         next if (is_first_of_month(@snapshot_time) == 1);   
 
         next if ($delta < $days);
@@ -188,25 +180,25 @@ sub debug_rotate_hourly_snapshot {
     my $delta_days = shift;
     my $delta_hours = shift;
     my @snapshot_time = @_;
-    print "debug: Snapshot       => " . $snapshot->snapshot_id . "\n";
-    print "debug: Description    => " . $snapshot->description . "\n";
-    print "debug: Timestamp      => @snapshot_time\n";
-    print "debug: Delta_in_Days  => " . $delta_days . "\n";
-    print "debug: Delta_in_Hours => " . $delta_hours . "\n";
-    print "debug: \n";
+    print "info: Snapshot       => " . $snapshot->snapshot_id . "\n";
+    print "info: Description    => " . $snapshot->description . "\n";
+    print "info: Timestamp      => @snapshot_time\n";
+    print "info: Delta_in_Days  => " . $delta_days . "\n";
+    print "info: Delta_in_Hours => " . $delta_hours . "\n";
+    print "info: \n";
 }
 
-sub debug_rotate_weekly_snapshot {
+sub debug_rotate_daily_snapshot {
     my $snapshot = shift;
     my $delta = shift;
     my @snapshot_time = @_;
-    print "debug: Snapshot       => " . $snapshot->snapshot_id . "\n";
-    print "debug: Description    => " . $snapshot->description . "\n";
-    print "debug: Timestamp      => @snapshot_time\n";
-    print "debug: Delta_in_Days  => " . $delta . "\n";
-    print "debug: Day_of_Week    => " . get_day_of_week(@snapshot_time) . "\n";
-    print "debug: Day_of_Month   => " . get_day_of_month(@snapshot_time) . "\n";
-    print "debug: \n";
+    print "info: Snapshot       => " . $snapshot->snapshot_id . "\n";
+    print "info: Description    => " . $snapshot->description . "\n";
+    print "info: Timestamp      => @snapshot_time\n";
+    print "info: Delta_in_Days  => " . $delta . "\n";
+    print "info: Day_of_Week    => " . get_day_of_week(@snapshot_time) . "\n";
+    print "info: Day_of_Month   => " . get_day_of_month(@snapshot_time) . "\n";
+    print "info: \n";
 }
 
 sub debug_delete_snapshot {
@@ -298,19 +290,24 @@ sub usage {
     die  "
 Usage:\n
 Example: $0 --hostname author01-uat --weeks 8 --days 7
-Example: $0 --hostname author01-uat --hours 24 \n\n";
+Example: $0 --hostname author01-uat --hours 24 \n\n
+Example: $0 --instanceid i-108a3a7f --weeks 8 --days 7 \n\n
+Example: $0 --instanceid i-108a3a7f --hours 24 \n\n";
 }
 
 #MAIN
 
-if (!defined($hostname)) {
+if (!defined($hostname) && !defined($instanceid)) {
     usage();    
 }
 
+my $identifier = $instanceid if (!defined($hostname));
+$identifier = $hostname if (!defined($instanceid));
+
 if (defined($hours)) {
-    rotate_hourly_snapshots($hostname,$hours,$dryrun);
+    rotate_hourly_snapshots($identifier,$hours,$dryrun);
 } elsif (defined($weeks) && defined($days)) {
-    rotate_snapshots($hostname,$weeks,$days,$dryrun);
+    rotate_snapshots($identifier,$weeks,$days,$dryrun);
 } else {
     usage();
 }
