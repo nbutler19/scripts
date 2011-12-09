@@ -15,7 +15,7 @@ ec2_filter_group.add_argument("--filter-id", dest="filter_id",
 
 parser.add_argument("-t", "--type", dest="type", choices=["volume", "instance", "snapshot", "ami"], required=True)
 parser.add_argument("-a", "--action", dest="action", choices=["add", "remove", "print"], required=True)
-parser.add_argument("--tags", metavar="KEY=VALUE", nargs="+", dest="tags", required=True)
+parser.add_argument("--tags", metavar="KEY=VALUE", nargs="+", dest="tags", default=["Name=Value"])
 parser.add_argument("-d", "--dry-run", action="store_true", dest="dryrun", default=False,
                   help="don't do anything")
 parser.add_argument("-q", "--quiet", action="store_false", dest="verbose", default=True,
