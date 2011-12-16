@@ -56,7 +56,10 @@ def run():
   dimension = format_dimension_as_dict(args.dimensions)
   stats = get_metric_statistics(conn, start, end, args.metric, args.namespace, args.statistics, dimension)
   # Cloudwatch sometimes returns in scientific notation, Zabbix can't handle scientific notation :(
-  print '%.15f' % stats[0][args.statistics]
+  if stats:
+    print '%.15f' % stats[0][args.statistics]
+  else:
+    raise Exception('Invalid metric or dimension')
 
 if __name__ == '__main__':
   run()
