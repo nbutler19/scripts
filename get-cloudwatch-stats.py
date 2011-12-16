@@ -18,9 +18,12 @@ def get_creds():
 
 def get_args():
   parser = argparse.ArgumentParser()
-  parser.add_argument("-n", "--namespace", dest="namespace", required=True)
-  parser.add_argument("-m", "--metric", dest="metric", required=True)
-  parser.add_argument("-d", "--dimensions", dest="dimensions", required=True)
+  parser.add_argument("-n", "--namespace", dest="namespace", 
+                      choices=["AWS/EC2", "AWS/RDS", "AWS/EBS", "AWS/ELB", "AWS/SNS", "AWS/SQS"], required=True,)
+  parser.add_argument("-m", "--metric", dest="metric", required=True,
+                      help="e.g. --metric RequestCount or --metric Latency")
+  parser.add_argument("-d", "--dimensions", dest="dimensions", required=True,
+                      help="e.g. LoadBalancerName=www-prod or DBInstanceIdentifier=zabbix")
   parser.add_argument("-s", "--statistics", dest="statistics", 
                       choices=["Average", "Sum", "SampleCount", "Maximum", "Minimum"], required=True)
   return parser.parse_args()
