@@ -10,10 +10,7 @@ def get_creds():
   ACCESSKEY=''
   SECRETKEY=''
 
-  if ACCESSKEY and SECRETKEY:
-    return ACCESSKEY, SECRETKEY
-  else:
-    return None, None
+  return ACCESSKEY, SECRETKEY
 
 def get_args():
   parser = argparse.ArgumentParser()
