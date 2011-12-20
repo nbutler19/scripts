@@ -84,7 +84,7 @@ def attach_volume(conn,volume, instance, device):
       logging.info("Succeeded")
       return
     else:
-      logging.error("Failed to attach volume. Volume '%s' state is '%s'", volume.id, instance.block_device_mapping[device].status)
+      logging.error("Failed to attach volume. Volume '%s' in state '%s'", volume.id, instance.block_device_mapping[device].status)
       return 1
 
 def run():
