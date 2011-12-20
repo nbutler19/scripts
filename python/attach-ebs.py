@@ -2,7 +2,7 @@
 
 import boto
 import argparse
-import time
+import time, sys, logging
 
 def get_creds():
 
@@ -24,7 +24,13 @@ def get_args():
                       help="the instance-id, e.g i-1223456")
   parser.add_argument("-d", "--device", dest="device", required=True,
                       help="the device, e.g /dev/sdj")
+  parser.add_argument("-l", "--log", dest="loglevel", default='CRITICAL',
+                      choices=['CRITICAL','FATAL','ERROR','WARN','WARNING','INFO','DEBUG','NOTSET'],
+                      help="the loglevel sets the amount of output you want")
   return parser.parse_args()
+
+def get_numeric_loglevel(loglevel):
+  return getattr(logging, loglevel.upper())
 
 def get_conn(accesskey, secretkey):
   if accesskey and secretkey:
@@ -62,18 +68,41 @@ def attach_volume(conn,volume, instance, device):
     volume.update()
     time.sleep(1)
 
+  instance.update()
+
+  if instance.block_device_mapping[device].status != 'attached':
+    logging.info("Waiting for volume %s to become attached", volume.id),
+    counter = 0
+    while instance.block_device_mapping[device].status != 'attached' and counter < 30:
+      instance.update()
+      time.sleep(1)
+      counter = counter + 1
+
+    instance.update()
+
+    if instance.block_device_mapping[device].status == 'attached':
+      logging.info("Succeeded")
+      return
+    else:
+      logging.error("Failed to attach volume. Volume '%s' state is '%s'", volume.id, instance.block_device_mapping[device].status)
+      return 1
+
 def run():
   (accesskey, secretkey) = get_creds()
   args = get_args()
+  numeric_level = get_numeric_loglevel(args.loglevel)
+  logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=numeric_level) 
   conn = get_conn(accesskey, secretkey)
   instance = get_instance(conn, args.instanceid)
   if args.volumeid:
     volume = get_volume(conn, args.volumeid)
-    attach_volume(conn, volume, instance, args.device)
+    retval = attach_volume(conn, volume, instance, args.device)
+    sys.exit(retval)
   else:
     snapshot = get_snapshot(conn, args.snapshotid)
     volume = create_volume_from_snapshot(conn, snapshot, instance)
-    attach_volume(conn, volume, instance, args.device)
+    retval = attach_volume(conn, volume, instance, args.device)
+    sys.exit(retval)
 
 
 if __name__ == '__main__':
