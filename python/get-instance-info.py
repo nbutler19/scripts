@@ -63,10 +63,6 @@ def get_instances_matching_tag(instance_list, tagname, tagvalue):
         if does_tag_exist(tagname, instance_tags):
             if instance.tags[tagname] == tagvalue:
                 matching_instances.append(instance)  
-            else:
-                next
-        else:
-            next
     
     return matching_instances
 
