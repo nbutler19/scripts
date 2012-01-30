@@ -36,7 +36,7 @@ def get_conn(accesskey, secretkey):
 
 def parse_url(url):
     if url.startswith('s3://'):
-        u = url.strip('s3://').split('/')
+        u = url.lstrip('s3://').split('/')
         if len(u) > 1:
             u.reverse()
             bucket = u.pop()
