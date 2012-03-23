@@ -32,8 +32,6 @@ def get_conn(accesskey, secretkey):
     else:
         return boto.connect_s3()
 
-    return conn.get_bucket(bucket)
-
 def parse_url(url):
     if url.startswith('s3://'):
         u = url.lstrip('s3://').split('/')
