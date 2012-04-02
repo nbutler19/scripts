@@ -20,6 +20,11 @@ def get_parser():
                     dest='subparser_name',
                     help='sub-command help'
                     )
+
+    parser_list = subparsers.add_parser(
+                    'list',
+                    help='For listing domains a.k.a \'tables\''
+                    )
     
     parser_put = subparsers.add_parser(
                     'put',
@@ -403,16 +408,22 @@ def run():
     (accesskey, secretkey) = get_creds()
     args = get_args()
     conn = get_conn(accesskey, secretkey)
-    domain = get_domain(conn, args.domain)
+
+    if args.subparser_name == 'list':
+        for d in conn.get_all_domains():
+            print d
 
     if args.subparser_name == 'put':
+        domain = get_domain(conn, args.domain)
         data = load_file(args)
         put(data, domain, args)
 
     if args.subparser_name == 'del':
+        domain = get_domain(conn, args.domain)
         delete(domain, args)
 
     if args.subparser_name == 'get':
+        domain = get_domain(conn, args.domain)
         get(domain, args)
 
 if __name__ == '__main__':
