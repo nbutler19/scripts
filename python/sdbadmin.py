@@ -230,13 +230,10 @@ def validate_query(query):
     
     return True
 
-def load_json(file):
-    return simplejson.load(file)
-
 def load_file(args):
     if args.filename:
         with open(args.filename, 'r') as f:
-            content = simplejson.load(file)
+            content = simplejson.load(f)
     
         return content
     else:
