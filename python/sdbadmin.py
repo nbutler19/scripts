@@ -54,7 +54,7 @@ def get_parser():
                     """
                     )
     parser_put.add_argument(
-                    '-n',
+                    '-i',
                     '--item-name',
                     dest='item_name',
                     required=False,
@@ -66,7 +66,6 @@ def get_parser():
                     """
                     )
     parser_put.add_argument(
-                    '-a',
                     '--attr-name',
                     dest='attribute_name',
                     required=False,
@@ -94,12 +93,13 @@ def get_parser():
                     )
     parser_del.add_argument(
                     '-n',
-                    '--item-name',
-                    dest='item_name',
+                    '--name',
+                    dest='name',
+                    nargs='+',
                     required=False,
                     help=
                     """
-                    The name of the simpledb item name.
+                    The name of the simpledb item.
                     """
                     )
     parser_del.add_argument(
@@ -152,12 +152,13 @@ def get_parser():
                     )
     parser_get.add_argument(
                     '-n',
-                    '--item-name',
-                    dest='item_name',
+                    '--name',
+                    dest='name',
+                    nargs='+',
                     required=False,
                     help=
                     """
-                    The name of the simpledb item name.
+                    The name(s) of the simpledb item(s).
                     """
                     )
     parser_get.add_argument(
@@ -201,12 +202,39 @@ def get_parser():
                     to return all attributes
                     """
                     )
+    parser_get.add_argument(
+                    '-i',
+                    '--item-name',
+                    dest='item_name',
+                    required=False,
+                    default='name', 
+                    help=
+                    """
+                    The name to use as the simpledb item name. The default
+                    is 'name'
+                    """
+                    )
+    parser_get.add_argument(
+                    '--attr-name',
+                    dest='attribute_name',
+                    required=False,
+                    default='attributes',
+                    help=
+                    """
+                    The name to use as the simpledb attribute name. The default
+                    is 'attributes'
+                    """
+                    )
 
     return parser
 
 def get_args():
     parser = get_parser()
     return parser.parse_args()
+
+def error(message="A general error has occured"):
+    parser = get_parser()
+    parser.error(message)
 
 def get_conn(accesskey, secretkey):
     if accesskey and secretkey:
@@ -259,8 +287,28 @@ def parse_json(args, dict):
         attrs = dict[args.attribute_name]
         return name, attrs
     else:
-        parser = get_parser()
-        parser.error("Invalid input format")
+        error("Invalid input format")
+
+def get_item_attributes(item, args):
+    item_attrs = { args.attribute_name : {} }
+    for a in args.attributes:
+        try:
+            item_attrs[args.attribute_name][a] = item[a]
+        except KeyError:
+            item_attrs[args.attribute_name][a] = None
+
+    return item_attrs
+
+def build_item(item, args, item_attrs=None):
+    b_item = {}
+    if item_attrs:
+        b_item[args.item_name] = item.name
+        b_item[args.attribute_name] = item_attrs[args.attribute_name]
+        return b_item
+    else:
+        b_item[args.item_name] = item.name
+        b_item[args.attribute_name] = item
+        return b_item
 
 def build_query(domain, args):
     validate_query(args.query)
@@ -301,10 +349,10 @@ def put(data, domain, args):
 
 def delete(domain, args):
 
-    if args.item_name:
+    if args.name:
         items = []
-        item = domain.get_item(args.item_name)
-        items.append(item)
+        for name in args.name:
+            items.append(domain.get_item(name))
     elif args.query:
         q = build_query(domain, args)
         items = search_items(domain, q)
@@ -319,18 +367,17 @@ def delete(domain, args):
 
     for item in items:
         if args.attributes:
-            print "Deleting item %s attribute %s" % (item.name, args.attributes)
-            domain.delete_attributes(item.name, attributes=args.attributes)
+            if confirm("Delete item %s attribute %s?" % (item.name, args.attributes)):
+                domain.delete_attributes(item.name, attributes=args.attributes)
         else:
-            print "Deleting item %s" % item.name
-            item.delete()
+            if confirm("Delete item %s?" % item.name):
+                item.delete()
 
 def get(domain, args):
-
-    if args.item_name:
+    if args.name:
         items = []
-        item = domain.get_item(args.item_name)
-        items.append(item)
+        for name in args.name:
+            items.append(domain.get_item(name))
     elif args.query:
         q = build_query(domain, args)
         items = search_items(domain, q)
@@ -339,7 +386,18 @@ def get(domain, args):
         for item in domain:
             items.append(item)
 
-    return items
+    new_items = []
+    for item in items:
+        if item:
+            if args.attributes:
+                item_attrs = get_item_attributes(item, args)
+                new_item = build_item(item, args, item_attrs)
+                new_items.append(new_item)
+            else:
+                new_item = build_item(item, args)
+                new_items.append(new_item)
+            
+    dump_file(simplejson.dumps(new_items, indent=True), args)
 
 def run():
     (accesskey, secretkey) = get_creds()
@@ -355,8 +413,7 @@ def run():
         delete(domain, args)
 
     if args.subparser_name == 'get':
-        items = get(domain, args)
-        dump_file(simplejson.dumps(items, indent=True), args)
+        get(domain, args)
 
 if __name__ == '__main__':
     run()
