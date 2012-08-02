@@ -200,15 +200,30 @@ def get_volumes_attached_to_instance(conn, instance):
     volumes = []
     block_devices = instance.block_device_mapping
 
-    for dev, vol in block_devices:
-      volume = get_volume(conn, vol.volume_id)
+    for dev, vol in block_devices.items():
+      if isinstance(vol.volume_id, unicode):
+        volumeid = vol.volume_id.encode('utf8')
+      else:
+        volumeid = vol.volume_id
+
+      volume = get_volume(conn, volumeid)
       volumes.append(volume)
 
     return volumes
 
 def create_snapshot(conn, volume, name, ttl):
-  pass
+  dev = volume.attach_data.device
 
+  if dev is None:
+    dev = 'None'
+
+  ttl = ttl.isoformat()
+  desc = "%s-snap-%s-%s" % (name, volume.id, dev)
+
+  print dev
+  print ttl
+  print desc
+  
 def run():
     (accesskey, secretkey) = get_creds()
     args = get_args()
@@ -220,14 +235,12 @@ def run():
 
     logging.debug("Expiration determined to be: %s" % ttl.isoformat())
 
-    sys.exit()
-
     if args.subparser_name == 'instance':
       instance = get_instance(conn, args.instanceid)
       volumes = get_volumes_attached_to_instance(conn, instance)
-      for v in volumes:
-        retval = create_snapshot(conn, volume, args.name, args.ttl)
-        print retval
+      for volume in volumes:
+        retval = create_snapshot(conn, volume, args.name, ttl)
+#        print retval
 
     if args.subparser_name == 'device':
       instance = get_instance(conn, args.instanceid)
@@ -235,13 +248,13 @@ def run():
 
       for volume in volumes:
         if volume.attach_data.device == args.device:
-          retval = create_snapshot(conn, volume, args.name, args.ttl)
-          print retval
+          retval = create_snapshot(conn, volume, args.name, ttl)
+#          print retval
       
     if args.subparser_name == 'volume':
       volume = get_volume(conn, args.volumeid)
-      retval = create_snapshot(conn, volume, args.name, args.ttl)
-      print retval
+      retval = create_snapshot(conn, volume, args.name, ttl)
+#      print retval
 
     sys.exit()
 
