@@ -223,12 +223,7 @@ def get_meta_data(conn, volume, name, ttl):
 def create_snapshot(conn, volume, desc):
   logging.info("Creating snapshot for %s with description %s" % (repr(volume), desc))
   if logging.getLogger().level > 10:
-    snapshot = volume.create_snapshot(description=desc)
-    while snapshot.status != 'completed':
-      snapshot.update()
-      time.sleep(1)
-
-    return snapshot
+    return volume.create_snapshot(description=desc)
   else:
     return 'snapshot'
 
@@ -241,6 +236,11 @@ def create_tags(conn, snapshot, name, dev, ttl):
     snapshot.add_tag('Name', value=name)
     snapshot.add_tag('Device', value=dev)
     snapshot.add_tag('Expires', value=ttl)
+
+def wait_for_snapshot(snapshot):
+  while snapshot.status != 'completed':
+    snapshot.update()
+    time.sleep(1)
 
 def run():
     (accesskey, secretkey) = get_creds()
@@ -259,6 +259,7 @@ def run():
         snapshot = create_snapshot(conn, volume, desc)
         logging.info("%s" % repr(snapshot))
         create_tags(conn, snapshot, name, dev, expire)
+        wait_for_snapshot(snapshot)
 
     if args.subparser_name == 'device':
       instance = get_instance(conn, args.instanceid)
@@ -273,6 +274,7 @@ def run():
       snapshot = create_snapshot(conn, volume, desc)
       logging.info("%s" % repr(snapshot))
       create_tags(conn, snapshot, name, dev, expire)
+      wait_for_snapshot(snapshot)
 
     if args.subparser_name == 'volume':
       volume = get_volume(conn, args.volumeid)
@@ -280,6 +282,7 @@ def run():
       snapshot = create_snapshot(conn, volume, desc)
       logging.info("%s" % repr(snapshot))
       create_tags(conn, snapshot, name, dev, expire)
+      wait_for_snapshot(snapshot)
 
     sys.exit()
 
