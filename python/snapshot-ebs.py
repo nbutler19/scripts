@@ -2,7 +2,7 @@
 
 import boto
 import argparse
-import datetime, sys, logging, socket, re
+import time, datetime, sys, logging, socket, re
 from dateutil.relativedelta import relativedelta
 
 def get_creds():
@@ -184,6 +184,9 @@ def convert_ttl(ttl):
 
     return expiration
 
+def convert_to_utf8(string):
+  return string.encode('utf8')
+
 def get_conn(accesskey, secretkey):
     if accesskey and secretkey:
         return boto.connect_ec2(accesskey,secretkey)
@@ -201,12 +204,7 @@ def get_volumes_attached_to_instance(conn, instance):
     block_devices = instance.block_device_mapping
 
     for dev, vol in block_devices.items():
-      if isinstance(vol.volume_id, unicode):
-        volumeid = vol.volume_id.encode('utf8')
-      else:
-        volumeid = vol.volume_id
-
-      volume = get_volume(conn, volumeid)
+      volume = get_volume(conn, convert_to_utf8(vol.volume_id))
       volumes.append(volume)
 
     return volumes
@@ -223,16 +221,26 @@ def get_meta_data(conn, volume, name, ttl):
   return name, volume.id, dev, ttl, desc
 
 def create_snapshot(conn, volume, desc):
-  logging.debug("Creating snapshot for %s with description %s" % (repr(volume), desc))
-  return volume.create_snapshot(description=desc)
+  logging.info("Creating snapshot for %s with description %s" % (repr(volume), desc))
+  if logging.getLogger().level > 10:
+    snapshot = volume.create_snapshot(description=desc)
+    while snapshot.status != 'completed':
+      snapshot.update()
+      time.sleep(1)
+
+    return snapshot
+  else:
+    return 'snapshot'
 
 def create_tags(conn, snapshot, name, dev, ttl):
-  snapshot.add_tag('Name', value=name)
-  logging.debug("Creating tag Name=%s" % name)
-  snapshot.add_tag('Device', value=dev)
-  logging.debug("Creating tag Device=%s" % dev)
-  snapshot.add_tag('Expires', value=ttl)
-  logging.debug("Creating tag Expires=%s" % ttl)
+  logging.info("Creating tag Name=%s" % name)
+  logging.info("Creating tag Device=%s" % dev)
+  logging.info("Creating tag Expires=%s" % ttl)
+
+  if logging.getLogger().level > 10:
+    snapshot.add_tag('Name', value=name)
+    snapshot.add_tag('Device', value=dev)
+    snapshot.add_tag('Expires', value=ttl)
 
 def run():
     (accesskey, secretkey) = get_creds()
@@ -240,37 +248,38 @@ def run():
     numeric_level = get_numeric_loglevel(args.loglevel)
     logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=numeric_level) 
     conn = get_conn(accesskey, secretkey)
-
     ttl = convert_ttl(args.ttl)
-
     logging.debug("Expiration determined to be: %s" % ttl.isoformat())
 
     if args.subparser_name == 'instance':
       instance = get_instance(conn, args.instanceid)
       volumes = get_volumes_attached_to_instance(conn, instance)
       for volume in volumes:
-        name, id, dev, ttl, desc = get_meta_data(conn, volume, args.name, ttl)
+        name, id, dev, expire, desc = get_meta_data(conn, volume, args.name, ttl)
         snapshot = create_snapshot(conn, volume, desc)
-        print snapshot 
-        create_tags(conn, snapshot, name, dev, ttl)
+        logging.info("%s" % repr(snapshot))
+        create_tags(conn, snapshot, name, dev, expire)
 
     if args.subparser_name == 'device':
       instance = get_instance(conn, args.instanceid)
-      volumes = get_volumes_attached_to_instance(conn, instance)
+      try:
+        blk_dev = instance.block_device_mapping[args.device]
+        volume = get_volume(conn, convert_to_utf8(blk_dev.volume_id))
+      except KeyError:
+        logging.error("No volume attached to device %s on instance %s" % (args.device, args.instanceid))
+        sys.exit(1)
 
-      for volume in volumes:
-        if volume.attach_data.device == args.device:
-          name, id, dev, ttl, desc = get_meta_data(conn, volume, args.name, ttl)
-          snapshot = create_snapshot(conn, volume, desc)
-          print snapshot 
-          create_tags(conn, snapshot, name, dev, ttl)
+      name, id, dev, expire, desc = get_meta_data(conn, volume, args.name, ttl)
+      snapshot = create_snapshot(conn, volume, desc)
+      logging.info("%s" % repr(snapshot))
+      create_tags(conn, snapshot, name, dev, expire)
 
     if args.subparser_name == 'volume':
       volume = get_volume(conn, args.volumeid)
-      name, id, dev, ttl, desc = get_meta_data(conn, volume, args.name, ttl)
+      name, id, dev, expire, desc = get_meta_data(conn, volume, args.name, ttl)
       snapshot = create_snapshot(conn, volume, desc)
-      print snapshot 
-      create_tags(conn, snapshot, name, dev, ttl)
+      logging.info("%s" % repr(snapshot))
+      create_tags(conn, snapshot, name, dev, expire)
 
     sys.exit()
 
