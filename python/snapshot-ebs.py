@@ -211,19 +211,29 @@ def get_volumes_attached_to_instance(conn, instance):
 
     return volumes
 
-def create_snapshot(conn, volume, name, ttl):
+def get_meta_data(conn, volume, name, ttl):
   dev = volume.attach_data.device
 
   if dev is None:
-    dev = 'None'
+    dev = 'Unattached'
 
   ttl = ttl.isoformat()
   desc = "%s-snap-%s-%s" % (name, volume.id, dev)
 
-  print dev
-  print ttl
-  print desc
-  
+  return name, volume.id, dev, ttl, desc
+
+def create_snapshot(conn, volume, desc):
+  logging.debug("Creating snapshot for %s with description %s" % (repr(volume), desc))
+  return volume.create_snapshot(description=desc)
+
+def create_tags(conn, snapshot, name, dev, ttl):
+  snapshot.add_tag('Name', value=name)
+  logging.debug("Creating tag Name=%s" % name)
+  snapshot.add_tag('Device', value=dev)
+  logging.debug("Creating tag Device=%s" % dev)
+  snapshot.add_tag('Expires', value=ttl)
+  logging.debug("Creating tag Expires=%s" % ttl)
+
 def run():
     (accesskey, secretkey) = get_creds()
     args = get_args()
@@ -239,8 +249,10 @@ def run():
       instance = get_instance(conn, args.instanceid)
       volumes = get_volumes_attached_to_instance(conn, instance)
       for volume in volumes:
-        retval = create_snapshot(conn, volume, args.name, ttl)
-#        print retval
+        name, id, dev, ttl, desc = get_meta_data(conn, volume, args.name, ttl)
+        snapshot = create_snapshot(conn, volume, desc)
+        print snapshot 
+        create_tags(conn, snapshot, name, dev, ttl)
 
     if args.subparser_name == 'device':
       instance = get_instance(conn, args.instanceid)
@@ -248,13 +260,17 @@ def run():
 
       for volume in volumes:
         if volume.attach_data.device == args.device:
-          retval = create_snapshot(conn, volume, args.name, ttl)
-#          print retval
-      
+          name, id, dev, ttl, desc = get_meta_data(conn, volume, args.name, ttl)
+          snapshot = create_snapshot(conn, volume, desc)
+          print snapshot 
+          create_tags(conn, snapshot, name, dev, ttl)
+
     if args.subparser_name == 'volume':
       volume = get_volume(conn, args.volumeid)
-      retval = create_snapshot(conn, volume, args.name, ttl)
-#      print retval
+      name, id, dev, ttl, desc = get_meta_data(conn, volume, args.name, ttl)
+      snapshot = create_snapshot(conn, volume, desc)
+      print snapshot 
+      create_tags(conn, snapshot, name, dev, ttl)
 
     sys.exit()
 
