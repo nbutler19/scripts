@@ -111,6 +111,12 @@ def get_args():
         """
     )
     parser.add_argument(
+        '--tmpdir',
+        dest='tmpdir',
+        default='/tmp',
+        help='The location to store the temporary backup file',
+    )
+    parser.add_argument(
         '-t',
         '--ttl',
         dest='ttl',
@@ -247,7 +253,7 @@ def generate_id(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for x in range(size))
 
 def get_mysqldump(args):
-    filename = '/tmp/%s-%s.sql' % (args.database, generate_id())
+    filename = '%s/%s-%s.sql' % (args.tmpdir, args.database, generate_id())
 
     if args.password:
         mysql_command = ("mysqldump -h %s -P %s -u%s -p%s %s %s > %s" % 
@@ -269,6 +275,12 @@ def get_mysqldump(args):
             filename)
         )
 
+    # If compression is set, insert a pipe to gzip into the mysql_command
+    if args.compress:
+        parts = mysql_command.partition('>')
+        mysql_command = parts[0] + '| gzip -c >' + parts[2] + '.gz'
+        filename = filename + '.gz'
+
     logging.debug("Executing: %s" % mysql_command)
 
     try:
@@ -280,17 +292,7 @@ def get_mysqldump(args):
         logging.error("mysqldump: Execution failed with status: %s" % e.returncode)
         sys.exit(e.returncode)
 
-    if args.compress:
-        try:
-            subprocess.check_output('gzip %s' % filename, stderr=subprocess.STDOUT, shell=True)
-        except subprocess.CalledProcessError, e:
-            logging.error("%s" % e.output.rstrip('\n'))
-            logging.error("mysqldump: Execution failed with status: %s" % e.returncode)
-            sys.exit(e.returncode)
-
-        return filename + '.gz'
-    else:
-        return filename
+    return filename
 
 def dump_to_file(args):
     timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -299,7 +301,7 @@ def dump_to_file(args):
     if args.filename:
         filename = args.filename
     else:
-        filename = '/tmp/%s-%s.sql' % (args.database, timestamp)
+        filename = '%s/%s-%s.sql' % (args.tmpdir, args.database, timestamp)
 
     if args.compress and not args.filename:
         filename = filename + '.gz'
