@@ -49,9 +49,16 @@ def get_args():
     parser_s3.add_argument(
         '-p',
         '--path',
-        dest='key',
+        dest='path',
         required=False,
-        help='The AWS S3 pathname, e.g. DB/backups/backup.sql',
+        help='The AWS S3 pathname, e.g. DB/backups/',
+    )
+    parser_s3.add_argument(
+        '-f',
+        '--filename',
+        dest='filename',
+        required=False,
+        help='The AWS S3 object name, e.g. test-backup.sql.gz',
     )
     parser.add_argument(
         '--host',
@@ -83,7 +90,7 @@ def get_args():
         '-d',
         '--database',
         dest='database',
-        required=True,
+        default='test',
         help='The MySQL database to backup',
     )
     parser.add_argument(
@@ -270,7 +277,7 @@ def get_mysqldump(args):
             logging.error("mysqldump: Execution failed with status: %s" % e.returncode)
             sys.exit(e.returncode)
 
-        return filename
+        return filename + '.gz'
     else:
         return filename
 
@@ -283,9 +290,8 @@ def dump_to_file(args):
     else:
         filename = '/tmp/%s-%s.sql' % (args.database, timestamp)
 
-    if args.compress:
+    if args.compress and not args.filename:
         filename = filename + '.gz'
-        dumpfile = dumpfile + '.gz'
       
     if not os.path.exists(os.path.dirname(filename)):
         logging.debug("Making parent directories of filename %s" % os.path.dirname(filename))
@@ -298,9 +304,33 @@ def dump_to_file(args):
     return filename
 
 def dump_to_s3(conn, args):
+    timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     dumpfile = get_mysqldump(args)
     ttl = convert_ttl(args.ttl)
     logging.debug("Expiration determined as: %s" % ttl.strftime('%Y-%m-%dT%H:%M:%SZ'))
+
+    if args.path:
+        path = args.path
+    else:
+        path = '/'
+
+    if args.filename:
+        filename = args.filename
+    else:
+        filename = '%s-%s.sql' % (args.database, timestamp)
+
+    if args.compress and not args.filename:
+        filename = filename + '.gz'
+
+    key_name = path + '/' + filename
+    bucket = conn.get_bucket(args.bucket)
+    key = bucket.new_key(key_name=key_name)
+    with open(dumpfile, 'r') as f:
+           key.set_contents_from_file(f,md5=key.compute_md5(f))
+
+    logging.info("Put file %s to s3:///%s/%s" % (dumpfile, args.bucket, key.name))
+    logging.debug("Removing temporary file %s" % dumpfile)
+    os.remove(dumpfile)
 
     return
 
