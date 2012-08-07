@@ -272,7 +272,9 @@ def get_mysqldump(args):
     logging.debug("Executing: %s" % mysql_command)
 
     try:
+        logging.info("Starting mysql backup of %s database" % args.database)
         subprocess.check_output(mysql_command, stderr=subprocess.STDOUT, shell=True)
+        logging.info("Completed mysql backup of %s database" % args.database)
     except subprocess.CalledProcessError, e:
         logging.error("%s" % e.output.rstrip('\n'))
         logging.error("mysqldump: Execution failed with status: %s" % e.returncode)
@@ -337,7 +339,7 @@ def dump_to_s3(conn, args):
     with open(dumpfile, 'r') as f:
            key.set_contents_from_file(f,md5=key.compute_md5(f))
 
-    logging.info("Put file %s to s3:///%s/%s" % (dumpfile, args.bucket, key.name))
+    logging.info("Uploaded backup to s3:///%s/%s" % (args.bucket, key.name))
     logging.debug("Removing temporary file %s" % dumpfile)
     os.remove(dumpfile)
 
