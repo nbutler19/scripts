@@ -211,7 +211,7 @@ def convert_ttl(ttl):
     period = normalize_period(period)
 
     ttl = { period : int(num) }
-    now = datetime.datetime.now(tz.tzutc())
+    now = datetime.datetime.utcnow()
     expiration = now + relativedelta(**ttl)
 
     return expiration
@@ -275,7 +275,7 @@ def get_mysqldump(args):
         return filename
 
 def dump_to_file(args):
-    timestamp = time.strftime('%Y-%m-%dT%H:%M:%S%z')
+    timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     dumpfile = get_mysqldump(args)
     
     if args.filename:
@@ -300,7 +300,7 @@ def dump_to_file(args):
 def dump_to_s3(conn, args):
     dumpfile = get_mysqldump(args)
     ttl = convert_ttl(args.ttl)
-    logging.debug("Expiration determined as: %s" % ttl.strftime('%Y-%m-%dT%H:%M:%S%z'))
+    logging.debug("Expiration determined as: %s" % ttl.strftime('%Y-%m-%dT%H:%M:%SZ'))
 
     return
 
