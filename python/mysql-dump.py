@@ -94,6 +94,13 @@ def get_args():
         help='The MySQL database to backup',
     )
     parser.add_argument(
+        '-o',
+        '--options',
+        dest='options',
+        default='--skip-lock-table --single-transaction',
+        help='Additional options to pass to mysqldump',
+    )
+    parser.add_argument(
         '-c',
         '--compress',
         dest='compress',
@@ -243,19 +250,21 @@ def get_mysqldump(args):
     filename = '/tmp/%s-%s.sql' % (args.database, generate_id())
 
     if args.password:
-        mysql_command = ("mysqldump -h %s -P %s -u%s -p%s %s > %s" % 
+        mysql_command = ("mysqldump -h %s -P %s -u%s -p%s %s %s > %s" % 
             (args.hostname,
             args.port,
             args.username,
             args.password,
+            args.options,
             args.database,
             filename)
         )
     else:
-        mysql_command = ("mysqldump -h %s -P %s -u%s %s > %s" %
+        mysql_command = ("mysqldump -h %s -P %s -u%s %s %s > %s" %
             (args.hostname,
             args.port,
             args.username,
+            args.options,
             args.database,
             filename)
         )
