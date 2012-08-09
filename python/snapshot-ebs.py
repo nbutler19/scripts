@@ -94,6 +94,8 @@ def get_args():
         1 week(s),
         2m,
         2 months(s),
+        1y,
+        2 year(s),
         """
     )
     parser.add_argument(
@@ -128,6 +130,9 @@ def validate_period(period):
                     'm',
                     'month',
                     'months',
+                    'y',
+                    'year',
+                    'years',
                   ]
 
     for name in valid_names:
@@ -161,6 +166,9 @@ def normalize_period(period):
       'm' : 'months',
       'month' : 'months',
       'months' : 'months',
+      'y' : 'years',
+      'year' : 'years',
+      'years' : 'years',
     }
 
     if len(period) > 1:
