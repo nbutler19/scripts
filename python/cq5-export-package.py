@@ -139,7 +139,6 @@ def to_s3(conn, args):
            key.set_contents_from_file(f,md5=key.compute_md5(f))
 
     logging.info("Uploaded backup to s3:///%s/%s" % (args.bucket, key.name))
-#    logging.info("Uploaded backup to s3:///%s/%s" % (args.bucket, key_name))
     logging.debug("Removing temporary file %s" % tmpfile)
     os.remove(tmpfile)
 
