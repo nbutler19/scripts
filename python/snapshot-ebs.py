@@ -94,6 +94,8 @@ def get_args():
         1 week(s),
         2m,
         2 months(s),
+        1y,
+        2 year(s),
         """
     )
     parser.add_argument(
@@ -128,6 +130,9 @@ def validate_period(period):
                     'm',
                     'month',
                     'months',
+                    'y',
+                    'year',
+                    'years',
                   ]
 
     for name in valid_names:
@@ -161,6 +166,9 @@ def normalize_period(period):
       'm' : 'months',
       'month' : 'months',
       'months' : 'months',
+      'y' : 'years',
+      'year' : 'years',
+      'years' : 'years',
     }
 
     if len(period) > 1:
@@ -229,7 +237,7 @@ def create_snapshot(conn, volume, desc):
   else:
     return 'snapshot'
 
-def create_tags(conn, snapshot, name, dev, ttl):
+def create_tags(conn, snapshot, volume, name, dev, ttl):
   logging.info("Creating tag Name=%s" % name)
   logging.info("Creating tag Device=%s" % dev)
   logging.info("Creating tag Expires=%s" % ttl)
@@ -238,6 +246,15 @@ def create_tags(conn, snapshot, name, dev, ttl):
     snapshot.add_tag('Name', value=name)
     snapshot.add_tag('Device', value=dev)
     snapshot.add_tag('Expires', value=ttl)
+
+    for n,v in volume.tags.items():
+      if n == 'Name':
+        next
+      elif n == 'Device':
+        next
+      else:
+        logging.info("Creating tag %s=%s" % (n,v))
+        snapshot.add_tag(n, value=v)
 
 def wait_for_snapshot(snapshot):
   while snapshot.status != 'completed':
@@ -260,7 +277,7 @@ def run():
         name, id, dev, expire, desc = get_meta_data(conn, volume, args.name, ttl)
         snapshot = create_snapshot(conn, volume, desc)
         logging.info("%s" % repr(snapshot))
-        create_tags(conn, snapshot, name, dev, expire)
+        create_tags(conn, snapshot, volume, name, dev, expire)
         wait_for_snapshot(snapshot)
 
     if args.subparser_name == 'device':
@@ -275,7 +292,7 @@ def run():
       name, id, dev, expire, desc = get_meta_data(conn, volume, args.name, ttl)
       snapshot = create_snapshot(conn, volume, desc)
       logging.info("%s" % repr(snapshot))
-      create_tags(conn, snapshot, name, dev, expire)
+      create_tags(conn, snapshot, volume, name, dev, expire)
       wait_for_snapshot(snapshot)
 
     if args.subparser_name == 'volume':
@@ -283,7 +300,7 @@ def run():
       name, id, dev, expire, desc = get_meta_data(conn, volume, args.name, ttl)
       snapshot = create_snapshot(conn, volume, desc)
       logging.info("%s" % repr(snapshot))
-      create_tags(conn, snapshot, name, dev, expire)
+      create_tags(conn, snapshot, volume, name, dev, expire)
       wait_for_snapshot(snapshot)
 
     sys.exit()
