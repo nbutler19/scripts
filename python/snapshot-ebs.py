@@ -249,9 +249,9 @@ def create_tags(conn, snapshot, volume, name, dev, ttl):
 
     for n,v in volume.tags.items():
       if n == 'Name':
-        next
+        pass
       elif n == 'Device':
-        next
+        pass
       else:
         logging.info("Creating tag %s=%s" % (n,v))
         snapshot.add_tag(n, value=v)
