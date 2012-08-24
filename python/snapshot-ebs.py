@@ -204,8 +204,10 @@ def get_volumes_attached_to_instance(conn, instance):
     block_devices = instance.block_device_mapping
 
     for dev, vol in block_devices.items():
-      volume = get_volume(conn, convert_to_utf8(vol.volume_id))
-      volumes.append(volume)
+      # We don't care about root ebs devices
+      if not dev == '/dev/sda1':
+          volume = get_volume(conn, convert_to_utf8(vol.volume_id))
+          volumes.append(volume)
 
     return volumes
 
