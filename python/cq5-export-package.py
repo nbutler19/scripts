@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 import boto
-import argparse, os, string, random
+import argparse, os, sys, string, random
 import subprocess, time, datetime, sys, logging, socket, re
 from dateutil.relativedelta import relativedelta
 from dateutil import tz
@@ -23,6 +23,20 @@ def get_args():
         dest='path',
         required=True,
         help='The CQ5 Path, /content/something, /var/tmp, /home/users etc',
+    )
+    parser.add_argument(
+        '-e',
+        '--exclude',
+        dest="exclude",
+        required=False,
+        help='A filter definition to exclude nodes under the path specified',
+    )
+    parser.add_argument(
+        '-i',
+        '--include',
+        dest="include",
+        required=False,
+        help='A filter definition to include nodes under the path specified',
     )
     parser.add_argument(
         '--host',
@@ -59,15 +73,10 @@ def get_args():
         '-n',
         '--name',
         dest='name',
-        default=socket.gethostname(),
-        help=
-        """
-        The name of the cq5 instance. Defaults to the current
-        host.
-        """
+        default='account_backup',
+        help='The name of the cq5 package to create.',
     )
     parser.add_argument(
-        '-e',
         '--environment',
         dest='environ',
         required=True,
@@ -104,27 +113,40 @@ def get_conn(accesskey, secretkey):
 
 def export(args):
     timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
-    safe_path = args.path.replace('/','_')
-    tmpfile = '%s/%s-%s-%s.zip' % (args.tmpdir, args.name, safe_path, timestamp)
+    tmpfile = '%s/%s-%s-%s.zip' % (args.tmpdir, args.hostname, args.name, timestamp)
 
-    command = ("crx export --output_file %s %s --host %s --port %s --username %s --password %s"  % 
-        (tmpfile,
-        args.path,
-        args.hostname,
-        args.port,
-        args.username,
-        args.password)
-    )
+    create_package = ("curl -u admin:%s -F'name=%s' -F'cmd=create' http://%s:%s/crx/packmgr/service.jsp" %
+        (args.password, args.name, args.hostname, args.port) )
 
-    logging.debug("Executing: %s" % command)
+    update_package = ("curl -u admin:%s -F'path=/etc/packages/%s.zip' -F'filter=[{\"root\":\"%s\",\"rules\":[{\"modifier\":\"exclude\",\"pattern\":\"%s\"}]}]' http://%s:%s/crx/packmgr/update.jsp" %
+        (args.password, args.name, args.path, args.exclude, args.hostname, args.port) )
+
+    build_package = ("curl -u admin:%s -F'name=%s' -F'cmd=build' http://%s:%s/crx/packmgr/service.jsp" %
+        (args.password, args.name, args.hostname, args.port) )
+
+    download_package = ("curl -u admin:%s -o %s http://%s:%s/etc/packages/%s.zip" %
+        (args.password, tmpfile, args.hostname, args.port, args.name) )
 
     try:
-        logging.info("Starting cq backup of %s" % args.path)
-        subprocess.check_output(command, stderr=subprocess.STDOUT, shell=True)
-        logging.info("Completed cq backup of %s" % args.path)
+        logging.info("Creating cq package %s" % args.name)
+        logging.debug("Executing: %s" % repr(create_package))
+        subprocess.check_output(create_package, stderr=subprocess.STDOUT, shell=True)
+        logging.info("Completed package creation of %s" % args.name)
+        logging.info("Updating package %s with filter %s and excludes %s" % (args.name, args.path, args.exclude) )
+        logging.debug("Executing: %s" % repr(update_package))
+        subprocess.check_output(update_package, stderr=subprocess.STDOUT, shell=True)
+        logging.info("Completed package update")
+        logging.info("Building package %s" % args.name)
+        logging.debug("Executing: %s" % repr(build_package))
+        subprocess.check_output(build_package, stderr=subprocess.STDOUT, shell=True)
+        logging.info("Completed package build")
+        logging.info("Downloading package /etc/packages/%s.zip to %s" % (args.name, tmpfile) )
+        logging.debug("Executing: %s" % repr(download_package))
+        subprocess.check_output(download_package, stderr=subprocess.STDOUT, shell=True)
+        logging.info("Completed download")
     except subprocess.CalledProcessError, e:
         logging.error("%s" % e.output.rstrip('\n'))
-        logging.error("crx export: Execution failed with status: %s" % e.returncode)
+        logging.error("cq5 export: Execution failed with status: %s" % e.returncode)
         sys.exit(e.returncode)
 
     return tmpfile 
