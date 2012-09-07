@@ -115,17 +115,17 @@ def export(args):
     timestamp = datetime.datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%SZ')
     tmpfile = '%s/%s-%s-%s.zip' % (args.tmpdir, args.hostname, args.name, timestamp)
 
-    create_package = ("curl -u admin:%s -F'name=%s' -F'cmd=create' http://%s:%s/crx/packmgr/service.jsp" %
+    create_package = ("curl -f -u admin:%s -X POST http://%s:%s/crx/packmgr/service/.json/etc/packages/%s.zip?cmd=create -d packageName=%s -d groupName=%s" %
+        (args.password, args.hostname, args.port, args.name, args.name, args.group) )
+
+    update_package = ("curl -f -u admin:%s -F'path=/etc/packages/%s/%s.zip' -F'filter=[{\"root\":\"%s\",\"rules\":[{\"modifier\":\"exclude\",\"pattern\":\"%s\"}]}]' http://%s:%s/crx/packmgr/update.jsp" %
+        (args.password, args.group, args.name, args.path, args.exclude, args.hostname, args.port) )
+
+    build_package = ("curl -f -u admin:%s -F'name=%s' -F'cmd=build' http://%s:%s/crx/packmgr/service.jsp" %
         (args.password, args.name, args.hostname, args.port) )
 
-    update_package = ("curl -u admin:%s -F'path=/etc/packages/%s.zip' -F'filter=[{\"root\":\"%s\",\"rules\":[{\"modifier\":\"exclude\",\"pattern\":\"%s\"}]}]' http://%s:%s/crx/packmgr/update.jsp" %
-        (args.password, args.name, args.path, args.exclude, args.hostname, args.port) )
-
-    build_package = ("curl -u admin:%s -F'name=%s' -F'cmd=build' http://%s:%s/crx/packmgr/service.jsp" %
-        (args.password, args.name, args.hostname, args.port) )
-
-    download_package = ("curl -u admin:%s -o %s http://%s:%s/etc/packages/%s.zip" %
-        (args.password, tmpfile, args.hostname, args.port, args.name) )
+    download_package = ("curl -f -u admin:%s -o %s http://%s:%s/etc/packages/%s/%s.zip" %
+        (args.password, tmpfile, args.hostname, args.port, args.group, args.name) )
 
     try:
         logging.info("Creating cq package %s" % args.name)
@@ -168,6 +168,7 @@ def to_s3(conn, args):
 
 def run():
     args = get_args()
+    args.group = 'backups'
     numeric_level = get_numeric_loglevel(args.loglevel)
     logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=numeric_level) 
     (accesskey, secretkey) = get_creds()
