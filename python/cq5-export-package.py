@@ -121,8 +121,8 @@ def export(args):
     update_package = ("curl -f -u admin:%s -F'path=/etc/packages/%s/%s.zip' -F'filter=[{\"root\":\"%s\",\"rules\":[{\"modifier\":\"exclude\",\"pattern\":\"%s\"}]}]' http://%s:%s/crx/packmgr/update.jsp" %
         (args.password, args.group, args.name, args.path, args.exclude, args.hostname, args.port) )
 
-    build_package = ("curl -f -u admin:%s -F'name=%s' -F'cmd=build' http://%s:%s/crx/packmgr/service.jsp" %
-        (args.password, args.name, args.hostname, args.port) )
+    build_package = ("curl -f -u admin:%s -F'name=%s' -F'group=%s' -F'cmd=build' http://%s:%s/crx/packmgr/service.jsp" %
+        (args.password, args.name, args.group, args.hostname, args.port) )
 
     download_package = ("curl -f -u admin:%s -o %s http://%s:%s/etc/packages/%s/%s.zip" %
         (args.password, tmpfile, args.hostname, args.port, args.group, args.name) )
