@@ -9,8 +9,8 @@ def get_creds():
 
     # By default empty, boto will look for environment variables
     # AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY
-    ACCESSKEY=''
-    SECRETKEY=''
+    ACCESSKEY=None
+    SECRETKEY=None
 
     return ACCESSKEY, SECRETKEY
 
@@ -62,6 +62,13 @@ def get_args():
         dest='volumeid',
         required=True,
         help='The AWS VolumeId, e.g. vol-1223456',
+    )
+    parser.add_argument(
+        '-r',
+        '--region',
+        dest='region',
+        default='us-east-1',
+        help='The AWS Region to use, e.g. us-east-1/us-west-2',
     )
     parser.add_argument(
         '-n',
@@ -195,11 +202,17 @@ def convert_ttl(ttl):
 def convert_to_utf8(string):
   return string.encode('utf8')
 
-def get_conn(accesskey, secretkey):
-    if accesskey and secretkey:
-        return boto.connect_ec2(accesskey,secretkey)
-    else:
-        return boto.connect_ec2()
+def get_conn(args):
+    region = get_region(args)
+    conn = boto.connect_ec2(args.accesskey, args.secretkey, region=region)
+    return conn
+ 
+def get_region(args):
+    import boto.ec2
+    regions = boto.ec2.regions(aws_access_key_id=args.accesskey,aws_secret_access_key=args.secretkey)
+    for region in regions:
+        if args.region == region.name:
+            return region
 
 def get_instance(conn, instanceid):
     return conn.get_all_instances(instanceid)[0].instances[0]
@@ -264,9 +277,11 @@ def wait_for_snapshot(snapshot):
 def run():
     (accesskey, secretkey) = get_creds()
     args = get_args()
+    args.accesskey = accesskey
+    args.secretkey = secretkey
     numeric_level = get_numeric_loglevel(args.loglevel)
     logging.basicConfig(format='%(asctime)s:%(levelname)s:%(message)s', level=numeric_level) 
-    conn = get_conn(accesskey, secretkey)
+    conn = get_conn(args)
     ttl = convert_ttl(args.ttl)
     logging.debug("Expiration determined to be: %s" % ttl.isoformat())
 
